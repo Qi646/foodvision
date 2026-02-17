@@ -1,20 +1,64 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-primary: #4A5C43;
-  --color-secondary: #F4EAD5;
-  --color-accent: #D97706;
-  --color-background: #FBF9F6;
-  --color-text: #333333;
-  --font-sans: 'Inter', 'sans-serif';
+  --background: #080808;
+  --foreground: #ffffff;
+  --accent: #ff4d00; /* Safety Orange */
+  --receipt-bg: #fdfdfd;
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-text);
-  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-outfit), Inter, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Subtle Film Grain Noise Texture */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  
+  .text-accent {
+    color: var(--accent);
+  }
+  
+  .bg-accent {
+    background-color: var(--accent);
+  }
+
+  .border-accent {
+    border-color: var(--accent);
+  }
+
+  .receipt-shadow {
+    box-shadow: 20px 20px 60px #040404, -20px -20px 60px #0c0c0c;
+  }
+}
+
+/* Perforated Edge Effect */
+.perforated-top {
+  mask-image: radial-gradient(circle at 10px 0, transparent 10px, white 10px);
+  mask-size: 20px 100%;
+}
+
+.perforated-bottom {
+  mask-image: radial-gradient(circle at 10px 100%, transparent 10px, white 10px);
+  mask-size: 20px 100%;
 }
