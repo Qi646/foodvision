@@ -44,9 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add CORS middleware
-nutrition_analyzer = NutritionAnalyzer()
-
 MAX_FILE_SIZE_MB = 5
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 

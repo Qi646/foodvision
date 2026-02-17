@@ -5,8 +5,9 @@ import re
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import Tool
-from langchain_openai import ChatOpenAI # Using ChatOpenAI for OpenRouter compatibility
+from langchain_groq import ChatGroq
 from langchain.agents import create_agent
+from langchain_core.prompts import ChatPromptTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -23,20 +24,20 @@ class LangChainOrchestrator:
         self.nutrition_analyzer = nutrition_analyzer_instance
         logger.info("LangChainOrchestrator initialized. Setting up LangChain agent.")
 
-        # 1. Initialize LLM (using OpenRouter)
-        openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
-        if not openrouter_api_key:
-            raise ValueError("OPENROUTER_API_KEY environment variable not set for LangChain Orchestrator.")
-        
-        openrouter_llm_model = os.environ.get("OPENROUTER_LLM_MODEL", "minimax/minimax-m2:free")
+        # 1. Initialize LLM (using Groq)
+        groq_api_key = os.environ.get("GROQ_API_KEY")
+        if not groq_api_key:
+            raise ValueError("GROQ_API_KEY environment variable not set for LangChain Orchestrator.")
 
-        self.llm = ChatOpenAI(
-            openai_api_base="https://openrouter.ai/api/v1",
-            openai_api_key=openrouter_api_key,
-            model_name=openrouter_llm_model,
-            temperature=0.2 # Keep temperature low for factual responses
+        # Default to a versatile Groq model
+        groq_llm_model = os.environ.get("GROQ_LLM_MODEL", "llama-3.3-70b-versatile")
+
+        self.llm = ChatGroq(
+            temperature=0,
+            model_name=groq_llm_model,
+            api_key=groq_api_key
         )
-        logger.info(f"OpenRouter LLM configured with model: {openrouter_llm_model}")
+        logger.info(f"Groq LLM configured with model: {groq_llm_model}")
 
         # 2. Create Tools
         self.tools = [
@@ -47,14 +48,16 @@ class LangChainOrchestrator:
             )
         ]
 
-        # 3. Define the Agent's Prompt
-        system_prompt = "You are a highly accurate and concise nutritional analyst. Your primary goal is to provide the total nutritional information for all food items identified by the VLM. You MUST use the 'Nutrition_Analyzer' tool for each food item to retrieve precise data for Calories, Protein, Carbohydrates, and Fat. After obtaining the data for all food items, you MUST calculate the total nutritional values. Your final output should explicitly list the total nutritional facts in the format: '**Total Nutritional Facts**:\n- **Calories**: X kcal\n- **Protein**: Y g\n- **Carbohydrates**: Z g\n- **Fat**: A g'. If a nutrient is not available, state 'N/A'. Do NOT include any descriptive text or additional information."
+        # 3. Define the Agent's System Prompt
+        system_prompt = (
+            "You are a highly accurate and concise nutritional analyst. Your primary goal is to provide the total nutritional information for all food items identified by the VLM. You MUST use the 'Nutrition_Analyzer' tool for each food item to retrieve precise data for Calories, Protein, Carbohydrates, and Fat. After obtaining the data for all food items, you MUST calculate the total nutritional values. Your final output should explicitly list the total nutritional facts in the format: '**Total Nutritional Facts**:\n- **Calories**: X kcal\n- **Protein**: Y g\n- **Carbohydrates**: Z g\n- **Fat**: A g'. If a nutrient is not available, state 'N/A'. Do NOT include any descriptive text or additional information."
+        )
 
-        # 4. Create the Agent
-        self.agent = create_agent(
+        # 4. Create the Agent using modern LangChain API
+        self.agent_executor = create_agent(
             model=self.llm,
             tools=self.tools,
-            system_prompt=system_prompt,
+            system_prompt=system_prompt
         )
 
     def generate_comprehensive_summary(self, vlm_analysis: Dict[str, Any]) -> Dict[str, Any]:
@@ -75,30 +78,21 @@ class LangChainOrchestrator:
 
         try:
             # Invoke the LangChain agent to get a detailed response
-            agent_response = self.agent.invoke({
+            agent_response = self.agent_executor.invoke({
                 "messages": [("human", f"The VLM identified the following food: {food_item}. Additional VLM context: {vlm_description}. Please provide a comprehensive nutritional analysis.")]
             })
-            detailed_output = agent_response["messages"][-1].content
+            # Extract output from the messages in the response
+            detailed_output = agent_response.get("messages", [])[-1].content if agent_response.get("messages") else ""
             logger.info(f"LangChain Agent detailed output: {detailed_output}")
 
             # Parse the detailed output for nutritional facts
+            # The regex parsing remains the same as it targets the specific format requested in the prompt
             description = ""
             details = {}
 
             nutritional_facts_str = detailed_output
 
             # Parse nutritional facts
-            calories_match = re.search(r"- \*\*Calories\*\*:\s*([^\n]+)", nutritional_facts_str, re.IGNORECASE)
-            if calories_match: details["Calories"] = calories_match.group(1).strip()
-
-            protein_match = re.search(r"- \*\*Protein\*\*:\s*([^\n]+)", nutritional_facts_str, re.IGNORECASE)
-            if protein_match: details["Protein"] = protein_match.group(1).strip()
-
-            carbohydrates_match = re.search(r"- \*\*Carbohydrates\*\*:\s*([^\n]+)", nutritional_facts_str, re.IGNORECASE)
-            if carbohydrates_match: details["Carbohydrates"] = carbohydrates_match.group(1).strip()
-
-            fat_match = re.search(r"- \*\*Fat\*\*:\s*([^\n]+)", nutritional_facts_str, re.IGNORECASE)
-            if fat_match: details["Fat"] = fat_match.group(1).strip()
             calories_match = re.search(r"- \*\*Calories\*\*:\s*([^\n]+)", nutritional_facts_str, re.IGNORECASE)
             if calories_match: details["Calories"] = calories_match.group(1).strip()
 

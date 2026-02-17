@@ -3,9 +3,9 @@ uvicorn==0.24.0.post1
 python-multipart==0.0.6
 langchain
 langchain-openai
+langchain-groq
 langgraph
-tensorflow
-tensorflow_hub
+tensorflow-cpu
 numpy
 Pillow
 python-dotenv

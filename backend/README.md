@@ -5,10 +5,10 @@ The backend for FoodVision, an AI-powered food analysis application. It provides
 ## Technologies
 
 -   **FastAPI:** High-performance web framework for building APIs with Python.
--   **TensorFlow:** Used for the initial binary food detection (is it food or not?).
+-   **TensorFlow (Local):** Used for the initial **fast, on-device** binary food detection to ensure low-latency filtering.
 -   **LangChain:** Orchestrates the interaction between the VLM and the nutritional analysis.
--   **OpenRouter API:** Provides access to:
-    -   **VLM (Visual Language Model):** Identifies food items and provides initial nutritional estimates from the image.
+-   **Groq API (Cloud):** Provides extremely fast inference for:
+    -   **VLM (Visual Language Model):** Identifies food items and provides initial nutritional estimates.
     -   **LLM (Large Language Model):** Generates a comprehensive and structured nutritional summary.
 
 ## Prerequisites
@@ -42,9 +42,10 @@ The backend for FoodVision, an AI-powered food analysis application. It provides
     ```
 
 2.  Open `.env` and configure the following variables:
-    -   `OPENROUTER_API_KEY`: **(Required)** Your API key from [OpenRouter](https://openrouter.ai/).
-    -   `OPENROUTER_MODEL`: (Optional) The VLM model to use (default: `nvidia/nemotron-nano-12b-v2-vl:free`).
-    -   `OPENROUTER_LLM_MODEL`: (Optional) The LLM model to use for summary generation (default: `minimax/minimax-m2:free`).
+    -   `GROQ_API_KEY`: **(Required)** Your API key from [Groq](https://console.groq.com/).
+    -   `GROQ_VLM_MODEL`: (Optional) The Vision model to use (default: `llama-3.2-90b-vision-preview`).
+    -   `GROQ_LLM_MODEL`: (Optional) The LLM model to use for summary generation (default: `llama-3.3-70b-versatile`).
+    -   `USDA_API_KEY`: **(Required)** Your API key from USDA FoodData Central (used for precise nutritional lookup).
 
 ## Running the Server
 
@@ -81,8 +82,7 @@ Analyzes an uploaded image file.
 ## Project Structure
 
 -   `main.py`: The entry point for the FastAPI application.
--   `food_detector.py`: Handles binary food detection using a local TensorFlow model.
--   `vlm_analyzer.py`: Interacts with the OpenRouter VLM to analyze images.
--   `langchain_orchestrator.py`: Uses LangChain to process VLM output and generate a structured summary.
--   `nutrition_analyzer.py`: Helper class for nutritional data (currently integrated into the orchestration).
--   `models/`: Directory containing the pre-trained TensorFlow model (`binary_food_detector.h5`).
+-   `food_detector.py`: Handles binary food detection using Groq Vision.
+-   `vlm_analyzer.py`: Interacts with the Groq VLM to analyze images.
+-   `langchain_orchestrator.py`: Uses LangChain and Groq to process VLM output and generate a structured summary.
+-   `nutrition_analyzer.py`: Helper class for nutritional data lookup (using USDA API).
